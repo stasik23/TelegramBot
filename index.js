@@ -31,7 +31,7 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "1053198981"; // Ваш
 const bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true });
 const chats = {};
 
-// Настройки игры
+// --- Настройки inline-игры ---
 const gameOptions = {
     reply_markup: JSON.stringify({
         inline_keyboard: [
@@ -43,39 +43,29 @@ const gameOptions = {
     }),
 };
 
-// Запуск бота
+// --- Запуск бота ---
 const startBot = async () => {
     console.log('Starting Telegram bot...');
-    
-    // Установка команд бота
+
     bot.setMyCommands([
         { command: '/start', description: 'Start the bot' },
         { command: '/help', description: 'Show help message' },
         { command: '/aboutme', description: 'About you' },
         { command: '/rules', description: 'Show rules' },
         { command: '/game', description: 'Play a game' },
-    ]).then(() => console.log('Commands set successfully!'))
-        .catch(error => console.error('Error setting commands:', error));
+    ]);
 
-    // Обработка сообщений
     bot.on('message', async (msg) => {
         const text = msg.text;
         const chatId = msg.chat.id;
-        const welcomeMessage = `Welcome to the bot! Use /help to see available commands.`;
 
         if (text === "/myid") {
-            const chatId = msg.chat.id;
-            bot.sendMessage(chatId, `Ваш chatId: ${chatId}`);
-        }
-
-        if (msg.sticker) {
-            console.log('Sticker Info:', msg.sticker);
-            bot.sendMessage(chatId, `file_id: ${msg.sticker.file_id}`);
+            return bot.sendMessage(chatId, `Ваш chatId: ${chatId}`);
         }
 
         if (text === '/start') {
             await bot.sendSticker(chatId, 'CAACAgIAAxkBAAOGaAJ7JHtON8EWmbzInaAsnPo-h2IAAutSAAIU7OBJ--rZqtZ7UTs2BA');
-            return bot.sendMessage(chatId, welcomeMessage);
+            return bot.sendMessage(chatId, `Welcome to the bot! Use /help to see available commands.`);
         }
 
         if (text === '/help') {
@@ -85,19 +75,7 @@ const startBot = async () => {
                 \n/aboutme - About the bot
                 \n/rules - Show rules
                 \n/game - Play a game`;
-            await bot.sendSticker(chatId, 'CAACAgIAAxkBAAN9aAJ6yZy2KO-f-rO1pGJyLXov-V8AAodLAAKvwNhJDEzeHqBLIlQ2BA');
             return bot.sendMessage(chatId, helpMessage);
-        }
-
-        if (text === '/aboutme') {
-            return bot.getUserProfilePhotos(chatId).then((photos) => {
-                if (photos.total_count > 0) {
-                    const photoId = photos.photos[0][0].file_id;
-                    bot.sendPhoto(chatId, photoId, { caption: 'Here is your profile photo!' });
-                } else {
-                    console.log('No profile photos found.');
-                }
-            });
         }
 
         if (text === '/rules') {
@@ -105,35 +83,30 @@ const startBot = async () => {
                 1. Be respectful to others.
                 \n2. No spamming.
                 \n3. Follow the bot's commands.`;
-            await bot.sendSticker(chatId, 'CAACAgIAAxkBAAOAaAJ63fg4atpXiNg_Sr7O8AyAeW4AAtxMAAK5T9hJjFB3jR_Lc8c2BA');
             return bot.sendMessage(chatId, rulesMessage);
         }
 
         if (text === "/game") {
             await bot.sendMessage(chatId, "Yeah! Let's play a game!");
-            await bot.sendSticker(chatId, 'CAACAgIAAxkBAANuaAJ4Rg89QCWxauJNsiK5Tr9GZ9sAAi5gAAJt9tlJxDA6B1NeRVU2BA');
-
             const secretNumber = Math.floor(Math.random() * 10);
             chats[chatId] = secretNumber;
-
-            return bot.sendMessage(chatId, "🤫I've picked a number between 1 and 10! Try to guess it.", gameOptions);
+            return bot.sendMessage(chatId, "🤫 I've picked a number between 1 and 10! Try to guess it.", gameOptions);
         }
     });
 
-    // Обработка callback-ов от игры
     bot.on('callback_query', async msg => {
         const data = msg.data;
         const chatId = msg.message.chat.id;
 
-        if (data === chats[chatId].toString()) {
-            return await bot.sendMessage(chatId, `🎉 Congratulations! You guessed the number ${data}!`);
+        if (data === chats[chatId]?.toString()) {
+            return bot.sendMessage(chatId, `🎉 Congratulations! You guessed the number ${data}!`);
         } else {
-            return await bot.sendMessage(chatId, `❌ Wrong guess! Try again.\nThe secret number was: ${chats[chatId]}`);
+            return bot.sendMessage(chatId, `❌ Wrong guess! Try again.\nThe secret number was: ${chats[chatId]}`);
         }
     });
 };
 
-// Обработка веб-форм - УЛУЧШЕНО!
+// --- Обработка форм ---
 app.post('/process-form', async (req, res) => {
     console.log('Received form data:', req.body);
 
@@ -161,9 +134,9 @@ app.post('/process-form', async (req, res) => {
     }
 });
 
-// Запуск сервера
+// --- Запуск сервера ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`✅ Server running on port ${PORT}`);
     startBot();
 });
