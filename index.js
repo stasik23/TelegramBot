@@ -6,9 +6,10 @@ const app = express();
 
 // Manual CORS configuration (no additional package needed)
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:3001');
+    res.header('Access-Control-Allow-Origin', 'https://shmakers-web.vercel.app');
     res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type');
+
     
     // Handle preflight requests
     if (req.method === 'OPTIONS') {
@@ -135,47 +136,28 @@ const startBot = async () => {
 // Обработка веб-форм - УЛУЧШЕНО!
 app.post('/process-form', async (req, res) => {
     console.log('Received form data:', req.body);
-    
+
     try {
         const formData = req.body;
         let messageContent = '';
 
-        // Delaem soobshenie iz polya formy
         for (const [key, value] of Object.entries(formData)) {
-            if (value !== undefined && value !== null) {
-                const stringValue = String(value).trim();
-                if (stringValue !== '' && stringValue !== 'Не вказано' && stringValue !== 'Не обрано') {
-                    messageContent += `<b>${key}</b>: ${stringValue}\n`;
-                }
+            if (value && String(value).trim() !== '' && value !== 'Не вказано' && value !== 'Не обрано') {
+                messageContent += `<b>${key}</b>: ${value}\n`;
             }
         }
 
         if (messageContent) {
             const fullMessage = `🔔 <b>Нова заявка з сайту!</b>\n\n${messageContent}`;
+            await bot.sendMessage(TELEGRAM_CHAT_ID, fullMessage, { parse_mode: 'HTML' });
 
-            await bot.sendMessage(TELEGRAM_CHAT_ID, fullMessage, {
-                parse_mode: 'HTML'
-            });
-
-            console.log('Message sent to Telegram successfully');
-
-            return res.status(200).json({
-                success: true,
-                message: 'Form submitted successfully'
-            });
+            return res.status(200).json({ success: true, message: 'Form submitted successfully' });
         } else {
-            return res.status(400).json({
-                success: false,
-                message: 'No valid form data received'
-            });
+            return res.status(400).json({ success: false, message: 'No valid form data received' });
         }
     } catch (error) {
         console.error('Error processing form:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Internal server error',
-            error: error.message
-        });
+        return res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
     }
 });
 
